@@ -6,5 +6,25 @@
                   <attribute name="t-if">question.id not in hide_question_ids</attribute>
             </xpath>
         </template>
+
+        <template id="simple_choice_random" inherit_id="survey.simple_choice">
+            <xpath expr="//div[@t-foreach='question.labels_ids']" position="attributes">
+                  <attribute name="t-foreach">question.get_random_label()</attribute>
+            </xpath>
+        </template>     
+        
+        <template id="multiple_choice_random" inherit_id="survey.multiple_choice">
+            <xpath expr="//div[@t-foreach='question.labels_ids']" position="attributes">
+                  <attribute name="t-foreach">question.get_random_label()</attribute>
+            </xpath>
+        </template>         
+        
+        
+        <template id="matrix_random" inherit_id="survey.matrix">
+            <xpath expr="//tr[@t-foreach='question.labels_ids_2']" position="attributes">
+                  <attribute name="t-foreach">question.get_random_label(label=2)</attribute>
+            </xpath>
+        </template>         
+                
     </data>
 </openerp>
