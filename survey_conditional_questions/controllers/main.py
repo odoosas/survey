@@ -43,6 +43,10 @@ class SurveyConditional(WebsiteSurvey):
             user_input = user_input_obj.browse(
                 cr, uid, [user_input_id], context=context)[0]
 
+        pages_survey = list(enumerate(user_input.survey_id.page_ids))
+        
+        
+        
         # Do not display expired survey (even if some pages have already been
         # displayed -- There's a time for everything!)
         errpage = self._check_deadline(
@@ -69,19 +73,28 @@ class SurveyConditional(WebsiteSurvey):
             flag = (True if prev and prev == 'prev' else False)
             page, page_nr, last = survey_obj.next_page(
                 cr, uid, user_input, user_input.last_displayed_page_id.id, go_back=flag, context=context)
-
             # special case if you click "previous" from the last page, then
                 # leave the survey, then reopen it from the URL, avoid crash
             if not page:
                 page, page_nr, last = survey_obj.next_page(
                     cr, uid, user_input, user_input.last_displayed_page_id.id, go_back=True, context=context)
-
+            
+            hide_question_ids = user_input_obj.get_list_questions(cr, uid, survey, user_input_id)
+            if hide_question_ids:
+                n_page = page_nr
+                pages_count = len(pages_survey) - 1
+                while [x for x in hide_question_ids if x in set(page.question_ids.ids)] and (n_page >= 0):
+                    last_displayed_page_id = pages_survey[n_page][1]
+                    page, page_nr, last = survey_obj.next_page(cr, uid, user_input, last_displayed_page_id.id, go_back=flag, context=context)
+                    n_page = flag and page_nr - 1 or page_nr + 1
+                    if last or n_page > pages_count:
+                        break
             data = {'survey': survey, 'page': page,
-                    'page_nr': page_nr, 'token': user_input.token}
+                    'page_nr': page_nr, 'token': user_input.token,
+                    'hide_question_ids': hide_question_ids}
             if last:
                 data.update({'last': True})
-            data['hide_question_ids'] = user_input_obj.get_list_questions(
-                cr, uid, survey, user_input_id)
             return request.website.render('survey.survey', data)
         else:
             return request.website.render("website.403")
+
