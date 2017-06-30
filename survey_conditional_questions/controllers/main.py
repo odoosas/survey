@@ -60,8 +60,7 @@ class SurveyConditional(WebsiteSurvey):
                 cr, uid, user_input, 0, go_back=False, context=context)
             data = {'survey': survey, 'page': page,
                     'page_nr': page_nr, 'token':  token}
-            data['hide_question_ids'] = user_input_obj.get_list_questions(
-                cr, uid, survey, user_input_id)
+            data['hide_question_ids'] = user_input_obj.get_list_questions(cr, uid, survey, user_input_id)
             if last:
                 data.update({'last': True})
             return request.website.render('survey.survey', data)
@@ -73,17 +72,17 @@ class SurveyConditional(WebsiteSurvey):
             flag = (True if prev and prev == 'prev' else False)
             page, page_nr, last = survey_obj.next_page(
                 cr, uid, user_input, user_input.last_displayed_page_id.id, go_back=flag, context=context)
-            # special case if you click "previous" from the last page, then
+                # special case if you click "previous" from the last page, then
                 # leave the survey, then reopen it from the URL, avoid crash
             if not page:
                 page, page_nr, last = survey_obj.next_page(
                     cr, uid, user_input, user_input.last_displayed_page_id.id, go_back=True, context=context)
             
             hide_question_ids = user_input_obj.get_list_questions(cr, uid, survey, user_input_id)
-            if hide_question_ids:
+            if hide_question_ids and not last:
                 n_page = page_nr
                 pages_count = len(pages_survey) - 1
-                while [x for x in hide_question_ids if x in set(page.question_ids.ids)] and (n_page >= 0):
+                while page and not request.registry['survey.page'].page_have_hide_questions(cr, uid, [page.id], user_input_id):
                     last_displayed_page_id = pages_survey[n_page][1]
                     page, page_nr, last = survey_obj.next_page(cr, uid, user_input, last_displayed_page_id.id, go_back=flag, context=context)
                     n_page = flag and page_nr - 1 or page_nr + 1
@@ -97,4 +96,3 @@ class SurveyConditional(WebsiteSurvey):
             return request.website.render('survey.survey', data)
         else:
             return request.website.render("website.403")
-
