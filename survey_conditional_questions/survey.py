@@ -74,20 +74,10 @@ class survey_question(models.Model):
         if not labels_ids:
             return labels_ids
         return random.sample(labels_ids, len(labels_ids))
-        
-
-class survey_user_input(models.Model):
-    _inherit = 'survey.user_input'
-
-    def get_list_questions(self, cr, uid, survey, user_input_id):
-
+    
+    def get_hide_question(self, cr, uid, ids, user_input_id):
         questions_to_hide = []
-        obj_questions = self.pool['survey.question']
-        question_ids = obj_questions.search(
-            cr,
-            uid,
-            [('survey_id', '=', survey.id),('conditional', '=', True)])
-        for question in obj_questions.browse(cr, uid, question_ids):
+        for question in self.browse(cr, uid, ids):
             if question.question_conditional_id:
                 for answers in question.question_conditional_id.user_input_line_ids:
                     if answers.user_input_id.id == user_input_id:
@@ -97,6 +87,36 @@ class survey_user_input(models.Model):
                             # Init answer
                             for answers1 in question.user_input_line_ids:
                                 answers1.value_suggested = None
-        return questions_to_hide
+        return questions_to_hide        
 
+class survey_user_input(models.Model):
+    _inherit = 'survey.user_input'
 
+    def get_list_questions(self, cr, uid, survey, user_input_id):
+
+        questions_to_hide = []
+        questions_obj = self.pool['survey.question']
+        question_ids = questions_obj.search(
+            cr,
+            uid,
+            [('survey_id', '=', survey.id),('conditional', '=', True)])
+    
+        return questions_obj.get_hide_question(cr, uid, question_ids, user_input_id)
+    
+class survey_page(models.Model):
+    _inherit = 'survey.page'
+
+    def page_have_hide_questions(self, cr, uid, ids, user_input_id):
+
+        questions_obj = self.pool['survey.question']
+        question_ids = questions_obj.search(cr, uid,[('page_id', '=', ids[0]),('conditional', '=', True)])
+        count_page_question = len(question_ids)
+
+        questions_to_hide = questions_obj.get_hide_question(cr, uid, question_ids, user_input_id)
+
+        count_page_hide_question = len(questions_to_hide)
+
+        if count_page_question == count_page_hide_question:
+            return False
+
+        return True
